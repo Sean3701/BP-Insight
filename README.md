@@ -1,3 +1,22 @@
+# 新版使用入口（2026-11-09）
+
+日常请使用 `start_web.bat`，打开 http://127.0.0.1:8503/app/ 。新界面为「创建分析 / 报告库 / 模型设置」，保留全部旧资料。下方M04D说明仅供旧版兼容参考。
+
+1. 在项目目录创建Python虚拟环境，运行 `python -m pip install -r requirements.txt`。
+2. 双击 `start_web.bat`，或运行 `python launcher_web.py`。
+3. 进入模型设置，编辑唯一默认的ChatGPT，填写OpenAI API Key，保存后测试连接。默认模型ID为 `gpt-5-mini`，可按账号权限修改。
+4. 上传BP，确认自动建议名称，选择模型并生成报告。报告可下载PDF，右下角可持续追问。
+
+密钥加密保存在本机数据库，主密钥位于 `data/secrets/master.key`；备份时保留整个data目录，切勿提交Git。此应用仅限本机loopback使用，没有登录/多用户权限。输入仅在明确发起分析、追问或连接测试时发送至配置的服务商。
+
+新版需求与重建规格：`docs/项目需求与重建规格.md`。实施计划：`docs/superpowers/plans/2026-11-09-upload-analysis.md`。新版本支持真实API，旧M04D接口继续保留Mock流程。
+
+开发验证：安装 `requirements-dev.txt` 后运行 `python -m pytest -q`。测试使用临时数据库，不触碰业务数据；外部网络由替身隔离。浏览器验收脚本 `tests/browser_smoke.cjs` 使用Playwright，启动 `tests/browser_fixture.py` 后运行；该测试服务仅限8504隔离验收，不用于日常研究。
+
+OpenAI接口实现依据：[Text generation](https://developers.openai.com/api/docs/guides/text)、[Structured model outputs](https://developers.openai.com/api/docs/guides/structured-outputs)、[GPT-5 mini](https://developers.openai.com/api/docs/models/gpt-5-mini)。当前输出使用提示词JSON和本地结构校验，不要求其他服务商支持strict schema。
+
+---
+
 # VC Intelligence Platform
 
 面向一级市场项目研究的 AI 投资分析平台。以 VC 业务作为首个应用，逐步连接 BP 文档、结构化项目档案、证据引用、分析工作流和报告。初期运行在 Windows 本地，后续扩展公司内部应用。

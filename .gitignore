@@ -7,6 +7,9 @@
 
 # Python environments and generated files
 .venv/
+.venv*/
+.python/
+.superpowers/
 venv/
 env/
 __pycache__/

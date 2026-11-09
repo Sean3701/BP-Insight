@@ -16,9 +16,26 @@ async def lifespan(app: FastAPI):
     initialize_database()
     from backend.analysis_api import recover_interrupted_runs
     recover_interrupted_runs()
+    from backend.workspace_api import initialize_workspace
+    initialize_workspace()
     yield
 
 app = FastAPI(title="VC Intelligence Platform API", version="0.4.0d", lifespan=lifespan)
+
+# Local-only application: reject browser cross-origin requests and DNS rebinding.
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.responses import JSONResponse
+from urllib.parse import urlparse
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1','localhost','testserver'])
+
+@app.middleware('http')
+async def local_origin(request, call_next):
+    origin = request.headers.get('origin')
+    if request.method not in ('GET','HEAD','OPTIONS') and origin:
+        expected = f'{request.url.scheme}://{request.headers.get("host", "")}'
+        if origin != expected:
+            return JSONResponse({'detail':'不允许跨站操作本地应用'},status_code=403)
+    return await call_next(request)
 
 def get_db():
     with SessionLocal() as db:
@@ -69,9 +86,9 @@ from pathlib import Path
 from fastapi import File, UploadFile
 from backend.models import DocumentFile, DocumentSegment
 from backend.document_parser import SUPPORTED, MAX_BYTES, DocumentParseError, extract
-from backend.database import ROOT
+from backend.database import ROOT, DATA_ROOT
 
-UPLOAD_ROOT = ROOT / 'data' / 'uploads'
+UPLOAD_ROOT = DATA_ROOT / 'uploads'
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
 
 
@@ -170,3 +187,15 @@ app.include_router(overview_router)
 # M04D: mock workflow and immutable report snapshots.
 from backend.analysis_api import router as analysis_router
 app.include_router(analysis_router)
+
+from backend.workspace_api import router as workspace_router
+from backend import workspace_jobs  # register routes before including router
+app.include_router(workspace_router)
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+app.mount('/app',StaticFiles(directory=ROOT/'frontend'/'web',html=True),name='workspace')
+
+@app.get('/')
+def home():
+    return RedirectResponse('/app/')
