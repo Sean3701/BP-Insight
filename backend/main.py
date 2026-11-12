@@ -35,7 +35,10 @@ async def local_origin(request, call_next):
         expected = f'{request.url.scheme}://{request.headers.get("host", "")}'
         if origin != expected:
             return JSONResponse({'detail':'不允许跨站操作本地应用'},status_code=403)
-    return await call_next(request)
+    response = await call_next(request)
+    if request.url.path.startswith('/app/'):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
 
 def get_db():
     with SessionLocal() as db:
